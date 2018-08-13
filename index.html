@@ -90,7 +90,7 @@
         if (pickupPlaceId && dropoffPlaceId) {
             pickupW.queryPlaceDetails(pickupPlaceId, function (pickupplace) {
                 dropoffW.queryPlaceDetails(dropoffPlaceId, function (dropoffplace) {
-                    alert("https://www.placeholde.biz/search" + $.param({
+                    alert("https://www.placeholde.biz/search?" + $.param({
                         from_type: 'geo',
                         to_type: 'geo',
 
