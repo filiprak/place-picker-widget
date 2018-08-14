@@ -11,8 +11,6 @@
     <!--custom styles-->
     <link rel="stylesheet" href="styles.css">
 
-    <!--google api key-->
-    <script type="text/javascript" src="google_api_key.js"></script>
 </head>
 <body>
 
@@ -20,7 +18,23 @@
 
 <div class="card">
     <div class="card-body">
-        <div class="" action="" method="">
+        <div class="">
+            <div class="form-group">
+                <div class="form-text">
+                    <label for="pickupLocation" class="">Test input</label>
+                </div>
+                <div class="location-input-wrapper">
+                    <input type="text" id="testInput"
+                           placeholder="airport, hotel name, railway station, street address..."
+                           value=""
+                           class="form-control">
+                    <div class="location-dropdown">
+                        <ul></ul>
+                        <div><img src="img/powered-by-google.png" align="right"></div>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group">
                 <div class="form-text">
                     <label for="pickupLocation" class="">Pick-up location</label>
@@ -61,11 +75,17 @@
 <!--js scripts-->
 <script type="text/javascript" src="external/jquery-2.2.4/jquery.min.js"></script>
 <script type="text/javascript" src="external/bootstrap-4.1.3/js/bootstrap.bundle.min.js"></script>
-<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCaAecBqyUDID2RvaumspGcK_mdhe1adms&libraries=places"></script>
+<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCaAecBqyUDID2RvaumspGcK_mdhe1adms&libraries=places&language=it"></script>
 <script>
     Array.prototype.contains = function (value) {
         return $.inArray(value, this) !== -1;
     };
+
+    /*jQuery.ajaxPrefilter(function(options) {
+        if (options.crossDomain && jQuery.support.cors) {
+            options.url = 'https://cors-anywhere.herokuapp.com/' + options.url;
+        }
+    });*/
 </script>
 <script type="text/javascript" src="widget.js"></script>
 <script>
@@ -117,5 +137,10 @@
 
     $('#search-btn').click(submitCallback);
 </script>
+
+<script>
+    const autoc = new google.maps.places.Autocomplete($('#testInput')[0]);
+</script>
+
 </body>
 </html>

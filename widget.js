@@ -9,6 +9,7 @@ function PlacePickerWidget(options) {
 
     self.autocompleteService = new google.maps.places.AutocompleteService();
     self.placesService = new google.maps.places.PlacesService($('.places-service')[0]);
+    self.GOOGLE_PLACES_API_KEY = '';
 
     self.timer = null;
     self.interval = null;
@@ -70,17 +71,39 @@ function PlacePickerWidget(options) {
 
     self.queryPredictions = function(input_text, success, error) {
 
-        const params = {input: input_text};
-        if (self.limits.location) params.location = self.limits.location;
-        if (self.limits.radius) params.radius = self.limits.radius;
+        const params = {
+            input: input_text,
+            key: 'AIzaSyCaAecBqyUDID2RvaumspGcK_mdhe1adms',
+        };
+        if (self.limits.location && self.limits.radius) {
+            params.strictbounds = true;
+            params.location = self.limits.location.lat() + ',' + self.limits.location.lng();
+            params.radius = self.limits.radius;
+        }
 
-        self.autocompleteService.getQueryPredictions(params, function (predictions, status) {
+        $.ajax({
+            url: 'https://maps.googleapis.com/maps/api/place/autocomplete/json?' + $.param(params),
+            type: 'GET',
+            dataType: 'json',
+            cache: false,
+            crossOrigin: true,
+            success: function (res) {
+                if (res.status === google.maps.places.PlacesServiceStatus.OK) {
+                    success(res.predictions, res.status);
+                } else if (error) error(res);
+            },
+            error: function (err) {
+                if (error) error(err);
+            }
+        });
+
+        /*self.autocompleteService.getQueryPredictions(params, function (predictions, status) {
             if (status === google.maps.places.PlacesServiceStatus.OK) {
                 success(predictions, status);
             } else {
                 if (error) error(predictions, status);
             }
-        });
+        });*/
     };
 
     self.queryPlaceDetails = function (place_id, success, error, fields, nocache) {
@@ -183,26 +206,26 @@ function PlacePickerWidget(options) {
     };
 
     self.determineSpan = function (place_types) {
-        if (!$.isArray(place_types)) return 'Street Address';
+        if (!$.isArray(place_types)) return 'Indirizzo Stradale';
         if (place_types.contains('airport')) {
-            return 'Airport';
+            return 'Aeroporto';
 
         } else if (place_types.contains('train_station')) {
-            return 'Train Station';
+            return 'Stazione Ferroviaria';
 
         } else if (place_types.contains('bus_station')) {
-            return 'Bus Station';
+            return 'Stazione degli Autobus';
 
         } else if (place_types.contains('restaurant')) {
-            return 'Restaurant';
+            return 'Ristorante';
 
         } else if (place_types.contains('night_club')) {
-            return 'Night Club';
+            return 'Discoteca';
 
         } else if (place_types.contains('establishment')){
-            return 'Business';
+            return 'Attività Commerciale';
         } else {
-            return 'Street Address';
+            return 'Indirizzo Stradale';
         }
     };
 
