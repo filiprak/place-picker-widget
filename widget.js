@@ -1,5 +1,8 @@
-
-// Widget class
+/**
+ * Place picker autocomplete widget for single input
+ * @param options
+ * @constructor
+ */
 function PlacePickerWidget(options) {
     const self = this;
 
@@ -7,9 +10,25 @@ function PlacePickerWidget(options) {
     self.inputId = options.inputId;
     self.onPlaceChanged = options.onPlaceChanged;
 
-    self.autocompleteService = new google.maps.places.AutocompleteService();
+    self.htmlInput = $('#' + self.inputId);
+
+    self.autocomplete = new google.maps.places.Autocomplete(self.htmlInput[0], {
+        strictBounds: true,
+        fields: ['geometry.location', 'name', 'types']
+    });
     self.placesService = new google.maps.places.PlacesService($('.places-service')[0]);
-    self.GOOGLE_PLACES_API_KEY = '';
+
+    setTimeout(function () {
+        self.pacContainer_jQuery = $('.pac-container');
+        self.pacContainer = self.pacContainer_jQuery[options.index];
+
+        self.observer = new MutationObserver(function (mutations) { self.mutationCallback(mutations); });
+        self.observer.observe(self.pacContainer, { childList: true });
+    }, 500);
+
+    self.autocomplete.addListener('place_changed', function () {
+        if(self.onPlaceChanged) self.onPlaceChanged(self, self.autocomplete.getPlace());
+    });
 
     self.timer = null;
     self.interval = null;
@@ -23,88 +42,56 @@ function PlacePickerWidget(options) {
     // bounds for prediction places
     self.limits = {
         location: null, // google.maps.LatLng object
-        radius: null // radius in meters
+        radius: null, // radius in meters
+        bounds: null
     };
     self.setLimits = function(latlng, radius) {
         if (latlng) self.limits.location = new google.maps.LatLng(latlng.lat, latlng.lng);
         else self.limits.location = null;
         self.limits.radius = radius;
+
+        // calculate bounds
+        if (latlng && radius) {
+            const c = new google.maps.Circle({
+                radius: radius,
+                center: self.limits.location
+            });
+            self.limits.bounds = c.getBounds();
+
+        } else self.limits.bounds = null;
+        self.autocomplete.setBounds(self.limits.bounds);
+    };
+
+    self.mutationCallback = function(mutations) {
+        const predictions = (self.autocomplete.gm_accessors_) ? self.autocomplete.gm_accessors_.place.dd.l : [];
+        self.onPredictionsChanged(predictions.map(function (value) {
+            return { name: value.data[0], types: value.data[2], placeId: value.data[8] };
+        }));
+    };
+
+    self.onPredictionsChanged = function(new_predictions) {
+        self.state.currentPredictions = new_predictions;
+
+        const pacitems = self.pacContainer_jQuery.find('.pac-item');
+        pacitems.each(function (i, elem) {
+            const icon = $(elem).find('.pac-icon');
+
+            if (new_predictions[i]) {
+                const request = function () {
+                    self.queryPlaceDetails(new_predictions[i].placeId, function (place) {
+                        const icon_filename = self.determineIcon(place.types);
+                        icon.css('background-image', 'url("img/icons/' + icon_filename + '")');
+                    }, console.error);
+                };
+                if (self.state.pendingRequests > 1) {
+                    setTimeout(request, self.state.pendingRequests * 500);
+                } else request();
+            }
+        });
     };
 
     // cache geocoding results to save api calls
-    self.cache = {};
     self.cache_placeDetails = {};
-
-    // html elements
-    self.htmlDropdownList = $('#' + self.inputId + ' + .location-dropdown ul');
-    self.htmlDropdownDiv = $('#' + self.inputId + ' + .location-dropdown');
-    self.htmlInput = $('#' + self.inputId);
-
-    //self.htmlLoader = $('<li class="loader-list-elem"><div class="justify-content-center"><div class="loader"></div></div></li>');
-
-    self.htmlInput.on('input', function (e) {
-        const input_text = e.target.value;
-
-        if (input_text) {
-
-            if (true || !self.cache[input_text]) {
-                self.showDropdown(true);
-                self.scheduleCallback(200, function () {
-                    self.queryPredictions(input_text, function (predictions) {
-                        self.state.currentPredictions = predictions;
-                        self.renderPredictions(predictions);
-                        // cache results
-                        self.cache[input_text] = predictions;
-                    });
-                }, console.error);
-
-            } else {
-                self.state.currentPredictions = self.cache[input_text];
-                self.renderPredictions(self.cache[input_text]);
-            }
-
-        } else {
-            self.state.currentPredictions = [];
-            self.showDropdown(false);
-        }
-    });
-
-    self.queryPredictions = function(input_text, success, error) {
-
-        const params = {
-            input: input_text,
-            key: 'AIzaSyCaAecBqyUDID2RvaumspGcK_mdhe1adms',
-        };
-        if (self.limits.location && self.limits.radius) {
-            params.strictbounds = true;
-            params.location = self.limits.location.lat() + ',' + self.limits.location.lng();
-            params.radius = self.limits.radius;
-        }
-
-        $.ajax({
-            url: 'https://maps.googleapis.com/maps/api/place/autocomplete/json?' + $.param(params),
-            type: 'GET',
-            dataType: 'json',
-            cache: false,
-            crossOrigin: true,
-            success: function (res) {
-                if (res.status === google.maps.places.PlacesServiceStatus.OK) {
-                    success(res.predictions, res.status);
-                } else if (error) error(res);
-            },
-            error: function (err) {
-                if (error) error(err);
-            }
-        });
-
-        /*self.autocompleteService.getQueryPredictions(params, function (predictions, status) {
-            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                success(predictions, status);
-            } else {
-                if (error) error(predictions, status);
-            }
-        });*/
-    };
 
     self.queryPlaceDetails = function (place_id, success, error, fields, nocache) {
         if (nocache || !self.cache_placeDetails[place_id]) {
@@ -126,32 +113,11 @@ function PlacePickerWidget(options) {
         } else success(self.cache_placeDetails[place_id], google.maps.places.PlacesServiceStatus.OK);
     };
 
-    self.scheduleCallback = function (time, callback) {
-        if (self.timer) {
-            clearTimeout(self.timer);
-        }
-        self.timer = setTimeout(callback, time);
-    };
-
-    self.cancelSchedule = function () {
-        if (self.timer) {
-            clearTimeout(self.timer);
-        }
-        self.timer = null;
-    };
-
-    self.runWorker = function() {
-
-    };
-
-    self.searchPlace = function(query) {
-        self.placesService.findPlaceFromQuery({query: query, fields: ['name', 'types']}, function (result, status) {
-            console.log(result, status);
-        });
+    self.getPlace = function () {
+        return self.htmlInput.val() ? self.autocomplete.getPlace() : undefined;
     };
 
     self.renderPredictions = function(predictions) {
-        self.htmlDropdownList.empty();
         for (var i = 0; i < predictions.length; ++i) {
             const listElem = $(self.renderPlaceListItem(i, predictions[i])).appendTo(self.htmlDropdownList);
             const imgElem = listElem.find('img');
@@ -164,29 +130,6 @@ function PlacePickerWidget(options) {
             }
             listElem.on('click', self.onPlaceListItemClick);
         }
-        self.htmlDropdownDiv.css('display', 'block');
-    };
-
-    self.renderPlaceListItem = function (i, place) {
-        if (place) {
-            return '<li data-index="' + i + '" ' + (place.place_id ? ('place-id="' + place.place_id + '"') : '') +
-                '><div><img src="img/icons/' + self.determineIcon() + '" align="left"><div>'
-                    + place.description +
-                '<span>' + self.determineSpan(place.types) + '</span></div>' +
-                '</div></li>';
-        }
-        else return '';
-    };
-
-    self.onPlaceListItemClick = function (e) {
-        const place_id = $(this).attr('place-id');
-        const prediction = self.state.currentPredictions[$(this).attr('data-index')];
-
-        self.htmlInput.val(prediction.description);
-        self.state.currentPlace = place_id ? place_id : null;
-        if (self.onPlaceChanged) self.onPlaceChanged(self, place_id);
-        self.showDropdown(false);
-        e.stopPropagation();
     };
 
     self.determineIcon = function (place_types) {
@@ -229,23 +172,63 @@ function PlacePickerWidget(options) {
         }
     };
 
-    self.loader = function(onoff) {
-        if (onoff === "on") {
-            self.htmlLoader.prependTo(self.htmlDropdownList);
-        } else {
-            self.htmlLoader.detach();
+    // define contains func if not defined
+    if (!Array.prototype.contains) {
+        Array.prototype.contains = function (value) {
+            return $.inArray(value, this) !== -1;
+        };
+    }
+
+}
+
+/**
+ * Widget that contains pickup and dropoff inputs + submit button
+ * dropoff place is seleted from locations restricted to bounds defined by radius and pickup location
+ * @param options
+ * @constructor
+ */
+function PickDropWidget(options) {
+    const self = this;
+
+    self.options = options || {};
+
+    self.dropoffRadius = options.dropoffRadius || 100000;
+
+    self.pickupInputId = options.pickupInputId;
+    self.dropoffInputId = options.dropoffInputId;
+    self.submitBtnId= options.submitBtnId;
+
+    self.onSubmit = options.onSubmit;
+    self.onError = options.onError;
+
+
+    self.pickupW = new PlacePickerWidget({
+        inputId: self.pickupInputId,
+        index: 0,
+        onPlaceChanged: function (widget, place) {
+            if (place && place.geometry) {
+                self.dropoffW.setLimits({lat: place.geometry.location.lat(), lng: place.geometry.location.lng()},
+                    self.dropoffRadius);
+            } else {
+                self.dropoffW.setLimits(null, null);
+            }
         }
+    });
+    self.dropoffW = new PlacePickerWidget({inputId: self.dropoffInputId, index: 1});
+
+    self.submit = function (e) {
+        const pickupplace = self.pickupW.getPlace();
+        const dropoffplace = self.dropoffW.getPlace();
+        if (self.onSubmit) self.onSubmit(pickupplace, dropoffplace, e);
     };
 
-    self.showDropdown = function(flag) { self.htmlDropdownDiv.css('display', flag ? 'block' : 'none'); }
-    self.htmlInput.on('focusin', function () {
-        if (self.htmlInput.val()) self.showDropdown(true);
-    });
-    self.htmlInput.on('focusout', function () { setTimeout(function() {
-        self.showDropdown(false); }, 200);
-    });
+    self.error = function (error) {
+        if (self.onError) self.onError(error);
+    };
 
-    self.getPlaceId = function() {
-        return self.state.currentPlace;
-    }
+    self.getPlaces = function () {
+        return { pickup: self.pickupW.getPlace(), dropoff: self.dropoffW.getPlace() };
+    };
+
+    $('#' + self.submitBtnId).click(self.submit);
 }

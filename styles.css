@@ -3,93 +3,27 @@ body {
     font-size: 14px;
 }
 
-ul, li {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
+/* google autocomplete style override */
+.pac-container {
 
-.location-input-wrapper {
-    position: relative;
 }
-.location-dropdown {
-    top: 100%;
-    position: absolute;
-    display: none;
-    width: 100%;
-    background-color: white;
-    border: 1px solid #E3E2E0;
-
-    z-index: 999;
-
-    -webkit-box-shadow: 0 6px 12px rgba(0,0,0,0.175);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.175);
+.pac-item {
+    padding: 8px 12px !important;
+    line-height: 40px !important;
+    cursor: pointer !important;
 }
-.location-dropdown ul {
-    max-height: 310px;
-    overflow-x: hidden;
-    overflow-y: auto;
+.pac-item:hover {
+    background-color: #e9e9e9;
 }
-.location-dropdown ul > li {
-    border-bottom: 1px solid #E3E2E0;
-    /*user-select: none;*/
-    cursor: pointer;
-
-    padding: 8px 12px;
-    min-height: 44px;
+.pac-icon {
+    margin:  5px 15px 0 5px !important;
+    width: 28px !important;
+    height: 28px !important;
+    background-image: url('img/icons/geocode.png');
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    background-size: 100% !important;
 }
-.location-dropdown ul > li > div {
-    display: flex;
-    display: -ms-flexbox;
-    display: -moz-flex;
-    display: -webkit-flex;
-    align-items: center;
-}
-.location-dropdown ul > li > div span {
-    display: block;
-    font-size: 0.8rem;
-    color: #adadad;
-}
-.location-dropdown ul > li > div img {
-    vertical-align: baseline;
-    margin-right: 15px;
-}
-.location-dropdown ul > li > div:after {
-    content: '';
-    display: table;
-    clear: both;
-}
-.location-dropdown ul > li:hover {
-    background-color: #f6f6f6;
-}
-
-.loader {
-    border: 5px solid #f3f3f3;
-    border-radius: 50%;
-    border-top: 5px solid #dad9d7;
-    width: 28px;
-    height: 28px;
-    -webkit-animation: spin 2s linear infinite; /* Safari */
-    animation: spin 2s linear infinite;
-}
-.loader-list-elem {
-    text-align: center;
-    text-align: -webkit-center;
-    text-align: -moz-center;
-}
-
-/* Safari */
-@-webkit-keyframes spin {
-    0% { -webkit-transform: rotate(0deg); }
-    100% { -webkit-transform: rotate(360deg); }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-
 
 
 /* bootstrap styles override */

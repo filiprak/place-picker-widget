@@ -19,21 +19,6 @@
 <div class="card">
     <div class="card-body">
         <div class="">
-            <div class="form-group">
-                <div class="form-text">
-                    <label for="pickupLocation" class="">Test input</label>
-                </div>
-                <div class="location-input-wrapper">
-                    <input type="text" id="testInput"
-                           placeholder="airport, hotel name, railway station, street address..."
-                           value=""
-                           class="form-control">
-                    <div class="location-dropdown">
-                        <ul></ul>
-                        <div><img src="img/powered-by-google.png" align="right"></div>
-                    </div>
-                </div>
-            </div>
 
             <div class="form-group">
                 <div class="form-text">
@@ -44,12 +29,9 @@
                            placeholder="airport, hotel name, railway station, street address..."
                            value=""
                            class="form-control">
-                    <div class="location-dropdown">
-                        <ul></ul>
-                        <div><img src="img/powered-by-google.png" align="right"></div>
-                    </div>
                 </div>
             </div>
+
             <div class="form-group">
                 <div class="form-text">
                     <label for="dropoffLocation" class="">Drop-off location</label>
@@ -59,12 +41,9 @@
                            placeholder="airport, hotel name, railway station, street address..."
                            value=""
                            class="form-control">
-                    <div class="location-dropdown">
-                        <ul></ul>
-                        <div><img src="img/powered-by-google.png" align="right"></div>
-                    </div>
                 </div>
             </div>
+
             <div class="mt-5">
                 <button id="search-btn" class="btn btn-lg btn-success btn-block">Search</button>
             </div>
@@ -77,69 +56,39 @@
 <script type="text/javascript" src="external/bootstrap-4.1.3/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCaAecBqyUDID2RvaumspGcK_mdhe1adms&libraries=places&language=it"></script>
 <script>
-    Array.prototype.contains = function (value) {
-        return $.inArray(value, this) !== -1;
-    };
 
-    /*jQuery.ajaxPrefilter(function(options) {
-        if (options.crossDomain && jQuery.support.cors) {
-            options.url = 'https://cors-anywhere.herokuapp.com/' + options.url;
-        }
-    });*/
 </script>
 <script type="text/javascript" src="widget.js"></script>
 <script>
-    const pickupW = new PlacePickerWidget({
-        inputId: 'pickupLocation',
-        onPlaceChanged: function (widget, place_id) {
-            if (place_id) {
-                widget.queryPlaceDetails(place_id, function (place, status) {
-                    dropoffW.setLimits({lat: place.geometry.location.lat(), lng: place.geometry.location.lng()}, 50000);
-                }, null, ['geometry'], true);
+    new PickDropWidget({
+        pickupInputId: 'pickupLocation',
+        dropoffInputId: 'dropoffLocation',
+        submitBtnId: 'search-btn',
+
+        onSubmit: function (pickup_Place, dropoff_Place, event) {
+            if (pickup_Place && dropoff_Place) {
+                alert("https://www.placeholde.biz/search?" + $.param({
+                    from_type: 'geo',
+                    to_type: 'geo',
+
+                    pickupName: pickup_Place.name,
+                    pickupLatitude: pickup_Place.geometry.location.lat(),
+                    pickupLongitude: pickup_Place.geometry.location.lng(),
+
+                    dropoffName: dropoff_Place.name,
+                    dropoffLatitude: dropoff_Place.geometry.location.lat(),
+                    dropoffLongitude: dropoff_Place.geometry.location.lng()
+                }));
+
             } else {
-                dropoffW.setLimits(null, null);
+                alert("Please choose both valid locations");
             }
+        },
+
+        onError: function (error) {
+            alert(error);
         }
     });
-    const dropoffW = new PlacePickerWidget({inputId: 'dropoffLocation'});
-
-    function submitCallback(e) {
-        const pickupPlaceId = pickupW.getPlaceId();
-        const dropoffPlaceId = dropoffW.getPlaceId();
-
-        if (pickupPlaceId && dropoffPlaceId) {
-            pickupW.queryPlaceDetails(pickupPlaceId, function (pickupplace) {
-                dropoffW.queryPlaceDetails(dropoffPlaceId, function (dropoffplace) {
-                    alert("https://www.placeholde.biz/search?" + $.param({
-                        from_type: 'geo',
-                        to_type: 'geo',
-
-                        pickupName: pickupplace.name,
-                        pickupLatitude: pickupplace.geometry.location.lat(),
-                        pickupLongitude: pickupplace.geometry.location.lng(),
-
-                        dropoffName: dropoffplace.name,
-                        dropoffLatitude: dropoffplace.geometry.location.lat(),
-                        dropoffLongitude: dropoffplace.geometry.location.lng()
-                    }));
-                }, errorHandler, ['name', 'geometry'], true)
-            }, errorHandler, ['name','geometry'], true)
-
-        } else {
-            alert("Please choose both valid locations");
-        }
-
-    }
-
-    function errorHandler() {
-        alert("Google API error");
-    }
-
-    $('#search-btn').click(submitCallback);
-</script>
-
-<script>
-    const autoc = new google.maps.places.Autocomplete($('#testInput')[0]);
 </script>
 
 </body>
