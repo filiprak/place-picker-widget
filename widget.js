@@ -80,8 +80,8 @@ function PlacePickerWidget(options) {
                 const request = function () {
                     self.queryPlaceDetails(new_predictions[i].placeId, function (place) {
                         const icon_filename = self.determineIcon(place.types);
-                        icon.css('background-image', 'url("img/icons/' + icon_filename + '")');
-                    }, console.error);
+                        icon.css('cssText', 'background-image: url("img/icons/' + icon_filename + '") !important;');
+                    }, console.warn);
                 };
                 if (self.state.pendingRequests > 1) {
                     setTimeout(request, self.state.pendingRequests * 500);
@@ -126,7 +126,7 @@ function PlacePickerWidget(options) {
                 self.queryPlaceDetails(predictions[i].place_id, function (details, status) {
                     spanElem.html(self.determineSpan(details.types));
                     imgElem.attr('src', 'img/icons/' + self.determineIcon(details.types));
-                }, console.error);
+                }, console.warn);
             }
             listElem.on('click', self.onPlaceListItemClick);
         }

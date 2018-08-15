@@ -19,7 +19,7 @@ body {
     margin:  5px 15px 0 5px !important;
     width: 28px !important;
     height: 28px !important;
-    background-image: url('img/icons/geocode.png');
+    background-image: url('img/icons/geocode.png') !important;
     background-repeat: no-repeat !important;
     background-position: center !important;
     background-size: 100% !important;
