@@ -10,6 +10,8 @@ function PlacePickerWidget(options) {
     self.inputId = options.inputId;
     self.onPlaceChanged = options.onPlaceChanged;
 
+    self.predictionsPath = null;
+
     self.htmlInput = $('#' + self.inputId);
 
     self.autocomplete = new google.maps.places.Autocomplete(self.htmlInput[0], {
@@ -63,7 +65,14 @@ function PlacePickerWidget(options) {
     };
 
     self.mutationCallback = function(mutations) {
-        const predictions = (self.autocomplete.gm_accessors_) ? self.autocomplete.gm_accessors_.place.dd.l : [];
+        let pred = [];
+        if (!self.predictionsPath) {
+            self.predictionsPath = detectPredictionsPath(self.autocomplete);
+        }
+        if (self.predictionsPath) {
+            pred = self.autocomplete.gm_accessors_.place[self.predictionsPath[0]][self.predictionsPath[1]];
+        }
+        const predictions = (self.autocomplete.gm_accessors_) ? pred : [];
         self.onPredictionsChanged(predictions.map(function (value) {
             return { name: value.data[0], types: value.data[2], placeId: value.data[8] };
         }));
@@ -231,4 +240,36 @@ function PickDropWidget(options) {
     };
 
     $('#' + self.submitBtnId).click(self.submit);
+}
+
+/**
+ * Function that helps to detect proper predictions array path inside google autocomplete object
+ */
+function detectPredictionsPath(autocomplete) {
+    let placeProp = autocomplete.gm_accessors_.place;
+    for (let k1 in placeProp) {
+        if (placeProp.hasOwnProperty(k1)) {
+            let prop1 = placeProp[k1];
+            for (let k2 in prop1) {
+                if (prop1.hasOwnProperty(k2)) {
+                    let prop2 = prop1[k2];
+                    if (Array.isArray(prop2)) {
+                        if (prop2.length > 0 && prop2[0].hasOwnProperty('data')) {
+                            if (Array.isArray(prop2[0].data)) {
+                                return [k1, k2];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return null;
+}
+
+// only implement if no native implementation is available
+if (typeof Array.isArray === 'undefined') {
+    Array.isArray = function(obj) {
+        return Object.prototype.toString.call(obj) === '[object Array]';
+    }
 }
